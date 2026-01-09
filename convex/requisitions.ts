@@ -1,30 +1,67 @@
-import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { query, mutation } from "./_generated/server";
 
+// Get all requisitions
+export const getRequisitions = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("requisitions").order("desc").collect();
+  },
+});
+
+// Get requisitions by ministry
+export const getRequisitionsByMinistry = query({
+  args: { ministryId: v.id("ministries") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("requisitions")
+      .withIndex("by_ministry", (q) => q.eq("ministryId", args.ministryId))
+      .order("desc")
+      .collect();
+  },
+});
+
+// Update requisition status
+export const updateRequisitionStatus = mutation({
+  args: {
+    requisitionId: v.id("requisitions"),
+    newStatus: v.string(),
+    rejectionReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.requisitionId, {
+      status: args.newStatus as any,
+      rejectionReason: args.rejectionReason,
+    });
+
+    await ctx.db.insert("auditLog", {
+      action: "REQUISITION_STATUS_UPDATE",
+      entityType: "requisitions",
+      entityId: args.requisitionId,
+      userId: "system",
+      details: `Requisition status changed to ${args.newStatus}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// Submit new requisition
 export const submitRequisition = mutation({
   args: {
     ministryId: v.id("ministries"),
-    userId: v.id("users"), // In real app, get from auth context
-    items: v.array(v.object({
-      name: v.string(),
-      quantity: v.number(),
-      unitPrice: v.number(),
-      total: v.number(),
-    })),
+    userId: v.id("users"),
+    items: v.array(
+      v.object({
+        name: v.string(),
+        quantity: v.number(),
+        unitPrice: v.number(),
+        total: v.number(),
+      })
+    ),
     totalAmount: v.number(),
   },
   handler: async (ctx, args) => {
-    const ministry = await ctx.db.get(args.ministryId);
-    if (!ministry) throw new Error("Ministry not found");
-
-    // 1. Double Check Budget (Iron Dome)
-    const available = ministry.budgetLimit - (ministry.budgetSpent + ministry.budgetFrozen);
-    if (available < args.totalAmount) {
-      throw new Error(`Budget Exceeded! Shortfall: $${args.totalAmount - available}`);
-    }
-
-    // 2. Create Requisition
-    const reqId = await ctx.db.insert("requisitions", {
+    const requisitionId = await ctx.db.insert("requisitions", {
       ministryId: args.ministryId,
       userId: args.userId,
       items: args.items,
@@ -33,40 +70,23 @@ export const submitRequisition = mutation({
       createdAt: Date.now(),
     });
 
-    // 3. Freeze Funds
-    await ctx.db.patch(args.ministryId, {
-      budgetFrozen: ministry.budgetFrozen + args.totalAmount,
+    // Freeze budget
+    const ministry = await ctx.db.get(args.ministryId);
+    if (ministry) {
+      await ctx.db.patch(args.ministryId, {
+        budgetFrozen: (ministry.budgetFrozen || 0) + args.totalAmount,
+      });
+    }
+
+    await ctx.db.insert("auditLog", {
+      action: "REQUISITION_SUBMITTED",
+      entityType: "requisitions",
+      entityId: requisitionId,
+      userId: args.userId,
+      details: `New requisition submitted for $${args.totalAmount}`,
+      timestamp: Date.now(),
     });
 
-    return reqId;
-  },
-});
-
-export const getPendingRequisitions = query({
-  handler: async (ctx) => {
-    return await ctx.db
-      .query("requisitions")
-      .filter((q) => q.eq(q.field("status"), "pending_approval"))
-      .collect();
-  },
-});
-
-export const approveRequisition = mutation({
-  args: { requisitionId: v.id("requisitions") },
-  handler: async (ctx, args) => {
-    const req = await ctx.db.get(args.requisitionId);
-    if (!req) throw new Error("Requisition not found");
-    if (req.status !== "pending_approval") throw new Error("Invalid status");
-
-    const ministry = await ctx.db.get(req.ministryId);
-    if (!ministry) throw new Error("Ministry missing");
-
-    // Move Funds: Frozen -> Spent
-    await ctx.db.patch(req.ministryId, {
-      budgetFrozen: ministry.budgetFrozen - req.totalAmount,
-      budgetSpent: ministry.budgetSpent + req.totalAmount,
-    });
-
-    await ctx.db.patch(args.requisitionId, { status: "approved" });
+    return requisitionId;
   },
 });

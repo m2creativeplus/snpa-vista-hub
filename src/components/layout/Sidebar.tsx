@@ -11,7 +11,9 @@ import {
   Printer, 
   BarChart3, 
   Package,
-  LineChart 
+  LineChart,
+  ClipboardList,
+  ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +24,12 @@ const navigation = [
   { name: "Budget Guard", href: "/dashboard/budget", icon: BarChart3 },
   { name: "National Assets", href: "/dashboard/assets", icon: FileText },
   { type: "divider", label: "Commercial Ops" },
-  { name: "Procurement", href: "/dashboard/shop", icon: Briefcase },
+  { name: "Order Tracker", href: "/dashboard/orders", icon: ClipboardList },
   { name: "Production", href: "/dashboard/production", icon: Printer },
   { name: "Inventory", href: "/dashboard/inventory", icon: Package },
   { type: "divider", label: "System Admin" },
   { name: "Content Ops", href: "/dashboard/cms", icon: Settings },
+  { name: "Media Library", href: "/dashboard/media", icon: ImageIcon },
 ];
 
 export function Sidebar() {
