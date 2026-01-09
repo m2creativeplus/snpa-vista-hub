@@ -2,230 +2,193 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  // Product Catalog
+  // Users (RBAC)
+  users: defineTable({
+    name: v.string(),
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("approver"), v.literal("requestor")),
+    ministryId: v.optional(v.string()), // Link to ministry table
+    tokenIdentifier: v.string(), // Clerk/Auth Identity
+  }).index("by_token", ["tokenIdentifier"]),
+
+  // Government Entities
+  ministries: defineTable({
+    name: v.string(),     // e.g. "Ministry of Health"
+    code: v.string(),     // e.g. "MoH"
+    budgetLimit: v.number(), // Annual Allocation
+    budgetSpent: v.number(), // Real-time Spend
+    budgetFrozen: v.number(), // Pending Approvals
+    logoUrl: v.optional(v.string()),
+  }),
+
+  // Orders (Requisitions)
+  requisitions: defineTable({
+    ministryId: v.id("ministries"),
+    userId: v.id("users"),
+    items: v.array(v.object({
+      name: v.string(),
+      quantity: v.number(),
+      unitPrice: v.number(),
+      total: v.number(),
+    })),
+    totalAmount: v.number(),
+    status: v.union(
+      v.literal("pending_approval"), 
+      v.literal("approved"), 
+      v.literal("rejected"), 
+      v.literal("in_production"),
+      v.literal("delivered")
+    ),
+    rejectionReason: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_ministry", ["ministryId"]),
+
+  // Security Scoring Engine
+  security_audits: defineTable({
+    userId: v.id("users"),
+    fileName: v.string(),
+    score: v.number(), // 0-100
+    level: v.string(), // "Critical", "High", "Medium", "Low"
+    missingFeatures: v.array(v.string()), // ["Watermark", "UV Ink"]
+    createdAt: v.number(),
+  }),
+  // Products Module
   products: defineTable({
     name: v.string(),
     slug: v.string(),
     category: v.string(),
-    subcategory: v.optional(v.string()),
-    description: v.string(),
     basePrice: v.number(),
     minQuantity: v.number(),
-    image: v.optional(v.string()),
-    paperOptions: v.array(v.object({
-      name: v.string(),
-      gsm: v.number(),
-      priceMultiplier: v.number()
-    })),
-    sizeOptions: v.array(v.object({
-      name: v.string(),
-      width: v.number(),
-      height: v.number(),
-      unit: v.string(),
-      priceMultiplier: v.number()
-    })),
-    finishOptions: v.array(v.string()),
-    turnaroundDays: v.array(v.number()),
+    description: v.string(),
     isActive: v.boolean(),
-  }).index("by_category", ["category"])
-    .index("by_slug", ["slug"]),
+    // Flexible fields for options
+    subcategory: v.optional(v.string()),
+    image: v.optional(v.string()),
+    paperOptions: v.any(),
+    sizeOptions: v.any(),
+    finishOptions: v.any(),
+    turnaroundDays: v.any(),
+  }).index("by_category", ["category"]).index("by_slug", ["slug"]),
 
-  // Clients
+  // Clients Module
   clients: defineTable({
     name: v.string(),
-    code: v.string(),
-    type: v.union(v.literal("government"), v.literal("private"), v.literal("ngo")),
+    code: v.string(), 
+    type: v.string(), // "government" | "private" | ...
+    isActive: v.boolean(),
+    balance: v.number(),
+    // Flexible contact info
     contactEmail: v.optional(v.string()),
     contactPhone: v.optional(v.string()),
     address: v.optional(v.string()),
     ministry: v.optional(v.string()),
     creditLimit: v.optional(v.number()),
-    balance: v.number(),
-    isActive: v.boolean(),
-  }).index("by_code", ["code"])
-    .index("by_type", ["type"]),
+  }).index("by_type", ["type"]).index("by_code", ["code"]),
 
-  // Print Jobs (Core Operations)
+  // Print Jobs (Production)
   printJobs: defineTable({
-    jobNumber: v.string(), // SNPA-PAP-XX-XXX format
+    jobNumber: v.string(),
     clientId: v.id("clients"),
     productId: v.id("products"),
-    jobName: v.string(),
-    quantity: v.number(),
-    paperType: v.string(),
-    paperGsm: v.number(),
-    color: v.union(v.literal("CMYK"), v.literal("BW"), v.literal("Spot")),
-    size: v.string(),
-    finish: v.optional(v.string()),
-    priority: v.union(v.literal("High"), v.literal("Medium"), v.literal("Low")),
-    status: v.union(
-      v.literal("Pending"),
-      v.literal("In Progress"),
-      v.literal("Pre-Press"),
-      v.literal("Printing"),
-      v.literal("Post-Press"),
-      v.literal("Quality Check"),
-      v.literal("Completed"),
-      v.literal("Delivered")
-    ),
-    estimatedCost: v.number(),
-    actualCost: v.optional(v.number()),
-    deadline: v.string(),
-    fileUrl: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    assignedTo: v.optional(v.string()),
+    status: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_status", ["status"])
-    .index("by_client", ["clientId"])
-    .index("by_priority", ["priority"])
-    .index("by_jobNumber", ["jobNumber"]),
+    // Job details
+    jobName: v.string(),
+    quantity: v.number(),
+    estimatedCost: v.number(),
+    priority: v.string(),
+    deadline: v.string(),
+    // Specs
+    paperType: v.string(),
+    paperGsm: v.number(),
+    color: v.string(),
+    size: v.string(),
+    finish: v.optional(v.string()),
+    fileUrl: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  }).index("by_status", ["status"]).index("by_jobNumber", ["jobNumber"]),
 
-  // Quality Control - ISO Compliance
+  // Quality Control
   qualityChecks: defineTable({
     printJobId: v.id("printJobs"),
-    checkType: v.union(
-      v.literal("ISO_9001"),
-      v.literal("ISO_12647"),
-      v.literal("ISO_14001"),
-      v.literal("Color_Calibration"),
-      v.literal("Paper_Quality"),
-      v.literal("Final_Inspection")
-    ),
-    score: v.number(), // 0-100
+    checkType: v.string(),
+    status: v.string(), // "Pass" | "Fail"
+    score: v.number(),
     target: v.number(),
-    status: v.union(v.literal("Pass"), v.literal("Fail"), v.literal("Pending")),
+    timestamp: v.number(),
     inspector: v.string(),
     notes: v.optional(v.string()),
-    timestamp: v.number(),
-  }).index("by_job", ["printJobId"])
-    .index("by_type", ["checkType"]),
+  }).index("by_job", ["printJobId"]),
 
-  // Press Color Logs
   pressColorLogs: defineTable({
     printJobId: v.optional(v.id("printJobs")),
     pressNumber: v.number(),
-    inkColor: v.union(v.literal("Cyan"), v.literal("Magenta"), v.literal("Yellow"), v.literal("Black")),
-    deltaE: v.number(), // Color difference value
-    status: v.union(v.literal("Pass"), v.literal("Fail")),
-    timestamp: v.number(),
+    inkColor: v.string(),
+    deltaE: v.number(),
+    status: v.string(),
     operator: v.string(),
-  }).index("by_job", ["printJobId"])
-    .index("by_press", ["pressNumber"]),
+    timestamp: v.number(),
+  }),
 
-  // Ink & Materials Inventory
+  // Inventory
   inkInventory: defineTable({
-    color: v.union(v.literal("Cyan"), v.literal("Magenta"), v.literal("Yellow"), v.literal("Black"), v.literal("Spot")),
-    spotColorName: v.optional(v.string()),
-    currentLevel: v.number(), // percentage
+    color: v.string(),
+    currentLevel: v.number(),
     reorderLevel: v.number(),
-    supplier: v.string(),
+    supplier: v.optional(v.string()),
     lastRefilled: v.number(),
-    unitCost: v.number(),
+    unitCost: v.optional(v.number()),
   }).index("by_color", ["color"]),
 
   paperInventory: defineTable({
-    name: v.string(),
-    gsm: v.number(),
-    size: v.string(),
-    quantity: v.number(), // sheets
-    reorderLevel: v.number(),
-    unitCost: v.number(),
-    supplier: v.string(),
-  }).index("by_gsm", ["gsm"]),
-
-  // Packaging Module
-  packagingOrders: defineTable({
-    printJobId: v.optional(v.id("printJobs")),
-    boxSize: v.union(v.literal("Small"), v.literal("Medium"), v.literal("Large"), v.literal("Custom")),
-    dimensions: v.object({
-      length: v.number(),
-      width: v.number(),
-      height: v.number(),
-    }),
+    type: v.optional(v.string()),
     quantity: v.number(),
-    labelDesignUrl: v.optional(v.string()),
-    status: v.union(v.literal("Pending"), v.literal("InProgress"), v.literal("Completed")),
-    createdAt: v.number(),
-  }).index("by_status", ["status"]),
+    reorderLevel: v.number(),
+    gsm: v.optional(v.number()),
+  }),
 
-  // Pricing Templates
-  pricingTemplates: defineTable({
-    productId: v.id("products"),
-    name: v.string(),
-    quantityBreaks: v.array(v.object({
-      minQty: v.number(),
-      maxQty: v.number(),
-      pricePerUnit: v.number()
-    })),
-    rushMultiplier: v.number(),
-    isActive: v.boolean(),
-  }).index("by_product", ["productId"]),
-
-  // Audit Log for ISO compliance
-  auditLog: defineTable({
-    action: v.string(),
-    entityType: v.string(),
-    entityId: v.string(),
-    userId: v.string(),
-    details: v.optional(v.string()),
-    timestamp: v.number(),
-  }).index("by_entity", ["entityType", "entityId"])
-    .index("by_timestamp", ["timestamp"]),
-
-  // ISBN Portal - Pre-registrations and Full Registrations
+  // ISBN Portal
   isbnRegistrations: defineTable({
+    preRegistrationCode: v.string(),
     bookTitle: v.string(),
     authorName: v.string(),
     email: v.string(),
-    phone: v.optional(v.string()),
-    language: v.union(v.literal("Somali"), v.literal("English"), v.literal("Arabic"), v.literal("Other")),
-    genre: v.optional(v.string()),
-    expectedPublishDate: v.optional(v.string()),
-    status: v.union(
-      v.literal("pre_registered"),
-      v.literal("pending_payment"),
-      v.literal("paid"),
-      v.literal("isbn_assigned"),
-      v.literal("published")
-    ),
-    isbn: v.optional(v.string()), // Assigned after payment
-    preRegistrationCode: v.string(), // Temporary code
-    paymentMethod: v.optional(v.union(v.literal("zaad"), v.literal("edahab"), v.literal("bank"), v.literal("cash"))),
-    paymentReference: v.optional(v.string()),
-    amountPaid: v.optional(v.number()),
+    status: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_email", ["email"])
-    .index("by_status", ["status"])
-    .index("by_isbn", ["isbn"])
-    .index("by_preRegistrationCode", ["preRegistrationCode"]),
+    // Optional / Workflow fields
+    phone: v.optional(v.string()),
+    language: v.optional(v.string()),
+    genre: v.optional(v.string()),
+    expectedPublishDate: v.optional(v.string()),
+    isbn: v.optional(v.string()),
+    paymentMethod: v.optional(v.string()),
+    paymentReference: v.optional(v.string()),
+    amountPaid: v.optional(v.number()),
+  }).index("by_preRegistrationCode", ["preRegistrationCode"]),
 
-  // ISBN Search Analytics - Track what users search for
-  isbnSearches: defineTable({
-    query: v.string(),
-    resultType: v.union(v.literal("available"), v.literal("taken"), v.literal("error")),
-    ipAddress: v.optional(v.string()),
-    userAgent: v.optional(v.string()),
-    convertedToRegistration: v.boolean(),
-    timestamp: v.number(),
-  }).index("by_query", ["query"])
-    .index("by_timestamp", ["timestamp"]),
-
-  // ISBN Catalog - Published books with assigned ISBNs
   isbnCatalog: defineTable({
     isbn: v.string(),
-    registrationId: v.id("isbnRegistrations"),
-    title: v.string(),
-    author: v.string(),
-    publisher: v.string(),
-    language: v.string(),
-    pages: v.optional(v.number()),
-    bindingType: v.optional(v.string()),
-    publicationDate: v.string(),
     isActive: v.boolean(),
-    createdAt: v.number(),
-  }).index("by_isbn", ["isbn"])
-    .index("by_author", ["author"])
-    .index("by_title", ["title"]),
+    title: v.optional(v.string()),
+    publisher: v.optional(v.string()),
+  }),
+
+  isbnSearches: defineTable({
+    query: v.string(),
+    resultType: v.string(),
+    timestamp: v.number(),
+    convertedToRegistration: v.boolean(),
+  }),
+
+  // System
+  auditLog: defineTable({
+    action: v.string(),
+    entityType: v.string(),
+    entityId: v.union(v.string(), v.id("printJobs")), // Flexible ID
+    userId: v.string(),
+    details: v.string(),
+    timestamp: v.number(),
+  }),
 });

@@ -5,6 +5,7 @@ import { Search, ShoppingCart, User, HelpCircle, FileText, Phone, Menu, MapPin }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Header() {
   return (
@@ -18,9 +19,16 @@ export function Header() {
             <span className="hidden sm:flex items-center gap-1 hover:text-white cursor-pointer"><Phone className="w-3 h-3" /> Support: 9800 (Toll Free)</span>
           </div>
           <div className="flex items-center gap-4 font-medium">
+             {/* Language Toggles */}
+            <div className="flex items-center gap-2 border-r border-slate-700 pr-4 mr-0">
+                <span className="cursor-pointer text-white font-bold">EN</span>
+                <span className="text-slate-600">|</span>
+                <span className="cursor-pointer hover:text-white">SO</span>
+                <span className="text-slate-600">|</span>
+                <span className="cursor-pointer hover:text-white">AR</span>
+            </div>
             <Link href="#" className="hover:text-white transition-colors">Order Status</Link>
-            <Link href="#" className="hover:text-white transition-colors">Request Sample Kit</Link>
-            <Link href="#" className="hover:text-white transition-colors">Help Center</Link>
+            <Link href="#" className="hover:text-white transition-colors hidden sm:inline">Help Center</Link>
           </div>
         </div>
       </div>
@@ -28,11 +36,31 @@ export function Header() {
       {/* Main Commercial Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center gap-4 lg:gap-8">
+          <div className="flex items-center gap-4 lg:gap-8 justify-between">
             
+            <Sheet>
+               <SheetTrigger asChild>
+                   <Button variant="ghost" size="icon" className="md:hidden">
+                       <Menu className="w-6 h-6 text-gray-800" />
+                   </Button>
+               </SheetTrigger>
+               <SheetContent side="left">
+                   <div className="flex flex-col gap-6 mt-6">
+                       <Link href="/" className="font-bold text-xl text-snpa-primary">SNPA Mobile</Link>
+                       <div className="flex flex-col gap-3">
+                           <Link href="/product/business-cards" className="text-lg font-medium">Business Cards</Link>
+                           <Link href="/product/marketing" className="text-lg font-medium">Marketing Materials</Link>
+                           <Link href="/product/gov-stationery" className="text-lg font-medium text-snpa-primary">Official Stationery</Link>
+                           <Link href="/dashboard/assets" className="text-lg font-medium">My Assets</Link>
+                           <Link href="/admin/dashboard" className="text-lg font-medium text-red-600">Approver Dashboard</Link>
+                       </div>
+                   </div>
+               </SheetContent>
+            </Sheet>
+
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
-              <div className="w-10 h-10 rounded bg-snpa-primary flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:bg-green-700 transition-colors">
+              <div className="w-10 h-10 rounded bg-snpa-primary flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:bg-green-800 transition-colors">
                 S
               </div>
               <div className="leading-tight">
@@ -49,7 +77,7 @@ export function Header() {
                   placeholder="What would you like to print today? (e.g. 'Annual Reports', 'ID Cards')" 
                   className="w-full pl-4 pr-32 h-11 bg-gray-50 border-gray-300 focus:bg-white focus:ring-2 focus:ring-snpa-primary/20 rounded-lg text-sm transition-all"
                 />
-                <Button className="absolute right-1 top-1 h-9 px-6 bg-snpa-primary hover:bg-green-700 text-white font-bold rounded-md transition-colors">
+                <Button className="absolute right-1 top-1 h-9 px-6 bg-snpa-primary hover:bg-green-800 text-white font-bold rounded-md transition-colors">
                   <Search className="w-4 h-4 mr-2" /> Search
                 </Button>
               </div>
@@ -71,7 +99,7 @@ export function Header() {
                {/* Cart */}
               <Button size="lg" className="relative bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 hover:text-snpa-primary hover:border-snpa-primary transition-all">
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                <span className="font-bold">Cart</span>
+                <span className="font-bold hidden sm:inline">Cart</span>
                 <Badge className="absolute -top-2 -right-2 bg-red-600 text-white border-2 border-white w-6 h-6 flex items-center justify-center rounded-full p-0">0</Badge>
               </Button>
             </div>

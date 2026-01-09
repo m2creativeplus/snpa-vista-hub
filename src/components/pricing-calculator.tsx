@@ -25,14 +25,24 @@ export function PricingCalculator() {
   const [budgetStatus, setBudgetStatus] = useState<"idle" | "approved" | "rejected">("idle");
   const [isOpen, setIsOpen] = useState(false);
 
-  // Pricing Logic (Mock Data based on market rates)
-  const baseRates: Record<string, number> = {
-    "business-card": 0.15,
-    "flyer-a5": 0.10,
-    "poster-a3": 1.50,
-    "booklet": 3.50,
-    "id-card": 2.50, // Security Printing item
-  };
+  // Product Catalog with Security Constraints
+  const PRODUCTS = [
+    // 🌍 Public / Standard Items (Available to Everyone)
+    { id: "business-card", name: "Business Cards", rate: 0.15, restrictedTo: [] },
+    { id: "flyer-a5", name: "Flyers (A5)", rate: 0.10, restrictedTo: [] },
+    { id: "poster-a3", name: "Posters (A3)", rate: 1.50, restrictedTo: [] },
+    { id: "booklet", name: "Booklets / Reports", rate: 3.50, restrictedTo: [] },
+    
+    // 🛡️ Security Restricted Items
+    { id: "id-card", name: "Secure ID Cards (Polymer)", rate: 2.50, restrictedTo: ["Security-A"] },
+    { id: "passport", name: "E-Passport (Bio-Chip)", rate: 8.00, restrictedTo: ["Security-A"] }, // Immigration Only (Logic handled by Tier)
+    { id: "visa-sticker", name: "Holographic Visa Sticker", rate: 1.20, restrictedTo: ["Security-A"] },
+    
+    // 💰 Finance Specific
+    { id: "tax-stamp", name: "Excise Tax Stamp (Roll)", rate: 0.05, restrictedTo: ["Security-A"] }, // MoF
+  ];
+
+  const baseRates = PRODUCTS.reduce((acc, p) => ({ ...acc, [p.id]: p.rate }), {} as Record<string, number>);
 
   const calculateTotal = () => {
     let base = baseRates[product] || 0;
@@ -56,31 +66,75 @@ export function PricingCalculator() {
   const totalCost = calculateTotal();
   const selectedMinistry = ministries.find(m => m.id === selectedMinistryId);
 
-  const handleBudgetCheck = () => {
-    if (!selectedMinistry) return;
-    
-    setIsCheckingBudget(true);
-    
-    // Simulate API delay
-    setTimeout(() => {
-        const remaining = selectedMinistry.budget.q1_remaining;
-        setIsCheckingBudget(false);
-        
-        if (totalCost > remaining) {
-            setBudgetStatus("rejected");
-            toast.error(`Budget Exceeded! ${selectedMinistry.code} has insufficient funds.`);
-        } else {
-            setBudgetStatus("approved");
-            toast.success("Budget Approved! Requisition sent to DG.");
-        }
-    }, 1500);
+  // Filter Products based on Selected Ministry Tier
+  const availableProducts = PRODUCTS.filter(p => {
+    if (p.restrictedTo.length === 0) return true; // Public item
+    if (!selectedMinistry) return false; // Locked if no ministry selected
+    return p.restrictedTo.includes(selectedMinistry.tier);
+  });
+
+  // --- CONVEX INTEGRATION START ---
+  // Using useMutation instead of local mock data
+  const submitRequisition = useMutation(api.requisitions.submitRequisition);
+  const checkBudget = useQuery(api.ministries.checkBudget, 
+    selectedMinistry ? { ministryId: selectedMinistry as Id<"ministries">, amount: totalCost } : "skip"
+  );
+  // --- CONVEX INTEGRATION END ---
+
+  const handleAddToCart = async () => {
+    setIsAdding(true);
+
+    try {
+      if (!selectedMinistry) {
+        toast.error("Please select a Ministry to bill.");
+        setIsAdding(false);
+        return;
+      }
+
+      // 1. Budget Guard Check (Iron Dome)
+      if (checkBudget && !checkBudget.allowed) {
+        toast.error(`Budget Exceeded! Shortfall: $${checkBudget.shortfall}`, {
+            description: "This requisition has been blocked by the Iron Dome system.",
+            duration: 5000,
+        });
+        setIsAdding(false);
+        return;
+      }
+      
+      // 2. Submit to Backend
+      await submitRequisition({
+        ministryId: selectedMinistry as Id<"ministries">,
+        userId: "user_mock_id_for_now" as Id<"users">, // TODO: Add real auth
+        items: [{
+          name: `${quantity}x ${PRODUCTS.find(p => p.id === product)?.name}`,
+          quantity: quantity,
+          unitPrice: calculateTotal() / quantity,
+          total: totalCost
+        }],
+        totalAmount: totalCost,
+      });
+
+      // 3. Success UI
+      setShowConfetti(true);
+      toast.success("Requisition Sent to DG Dashboard", {
+        description: `Order #${Math.floor(Math.random() * 1000)} created for ${selectedMinistry}. Funds frozen.`,
+      });
+
+      // Reset
+      setTimeout(() => setShowConfetti(false), 5000);
+    } catch (error) {
+      console.error(error);
+      toast.error("System Error: Failed to submit requisition.");
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const resetFlow = () => {
     setIsOpen(false);
     setBudgetStatus("idle");
     setIsCheckingBudget(false);
-    setSelectedMinistryId("");
+    // Do NOT reset Ministry ID here so they can make multiple orders
   }
 
   return (
@@ -98,7 +152,27 @@ export function PricingCalculator() {
       </CardHeader>
       <CardContent className="p-6 space-y-8">
         
-        {/* Product Selection */}
+        {/* 1. CLIENT SELECTION (Context) */}
+        <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-dashed border-muted-foreground/20">
+            <Label className="flex items-center gap-2">
+                User / Organization
+                {selectedMinistry && <span className="text-xs font-normal px-2 py-0.5 bg-green-100 text-green-700 rounded-full">{selectedMinistry.tier} Clearance</span>}
+            </Label>
+            <Select value={selectedMinistryId} onValueChange={(val) => { setSelectedMinistryId(val); setProduct("business-card"); }}>
+                <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Client (Required for Pricing)" />
+                </SelectTrigger>
+                <SelectContent>
+                    {ministries.map(m => (
+                        <SelectItem key={m.id} value={m.id}>
+                            {m.code} - {m.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+
+        {/* 2. PRODUCT CONFIGURATION */}
         <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -108,13 +182,16 @@ export function PricingCalculator() {
                         <SelectValue placeholder="Select product" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="business-card">Business Cards</SelectItem>
-                        <SelectItem value="flyer-a5">Flyers (A5)</SelectItem>
-                        <SelectItem value="poster-a3">Posters (A3)</SelectItem>
-                        <SelectItem value="booklet">Booklets / reports</SelectItem>
-                        <SelectItem value="id-card">Secure ID Cards</SelectItem>
+                        {/* Dynamic Catalog */}
+                        {availableProducts.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                                {p.restrictedTo.length > 0 && " 🔒"} 
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                     </Select>
+                    {!selectedMinistry && <p className="text-[10px] text-muted-foreground">Select a client to see restricted items.</p>}
                 </div>
                 
                 <div className="space-y-2">
@@ -181,106 +258,55 @@ export function PricingCalculator() {
             
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
-                    <Button size="lg" className="bg-white text-snpa-primary hover:bg-white/90 font-bold border-0 shadow-xl">
-                        Start Requisition <ArrowRight className="w-5 h-5 ml-2" />
+                    <Button size="lg" className="bg-white text-snpa-primary hover:bg-white/90 font-bold border-0 shadow-xl" disabled={!selectedMinistry}>
+                        Proceed to Payment <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>🛡️ Government Budget Guard</DialogTitle>
                         <DialogDescription>
-                            SNPA integrates directly with the Ministry of Finance. Select your Ministry to verify funds.
+                            Verifying funds for <strong>{selectedMinistry?.name}</strong>.
                         </DialogDescription>
                     </DialogHeader>
                     
-                    {budgetStatus === "idle" && (
+                    {budgetStatus === "idle" && selectedMinistry && (
                         <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label>Select Ministry / Agency</Label>
-                                <Select value={selectedMinistryId} onValueChange={setSelectedMinistryId}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Search Ministry Code..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ministries.map(m => (
-                                            <SelectItem key={m.id} value={m.id}>
-                                                {m.code} - {m.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="p-4 bg-slate-50 rounded-lg space-y-3 border border-slate-200">
+                                <div className="flex justify-between text-sm">
+                                    <span>Q1 Allocation:</span>
+                                    <span className="font-bold">${selectedMinistry.budget.q1_allocation.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span>Current Spent:</span>
+                                    <span className="text-orange-600 font-bold">${selectedMinistry.budget.q1_spent.toLocaleString()}</span>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-xs text-gray-500">
+                                        <span>Budget Usage</span>
+                                        <span>
+                                            {Math.round((selectedMinistry.budget.q1_spent / selectedMinistry.budget.q1_allocation) * 100)}%
+                                        </span>
+                                    </div>
+                                    <Progress value={(selectedMinistry.budget.q1_spent / selectedMinistry.budget.q1_allocation) * 100} />
+                                </div>
                             </div>
                             
-                            {selectedMinistry && (
-                                <div className="p-4 bg-slate-50 rounded-lg space-y-3 border border-slate-200">
-                                    <div className="flex justify-between text-sm">
-                                        <span>Q1 Allocation:</span>
-                                        <span className="font-bold">${selectedMinistry.budget.q1_allocation.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span>Current Spent:</span>
-                                        <span className="text-orange-600 font-bold">${selectedMinistry.budget.q1_spent.toLocaleString()}</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-xs text-gray-500">
-                                            <span>Budget Usage</span>
-                                            <span>
-                                                {Math.round((selectedMinistry.budget.q1_spent / selectedMinistry.budget.q1_allocation) * 100)}%
-                                            </span>
-                                        </div>
-                                        <Progress value={(selectedMinistry.budget.q1_spent / selectedMinistry.budget.q1_allocation) * 100} />
-                                    </div>
-                                </div>
-                            )}
-
                             <Button 
                                 className="w-full font-bold" 
-                                disabled={!selectedMinistry || isCheckingBudget} 
-                                onClick={handleBudgetCheck}
+                                disabled={isCheckingBudget} 
+                                onClick={handleAddToCart}
                             >
-                                {isCheckingBudget ? "Verifying with MoF..." : `Verify & Request Approval ($${totalCost})`}
+                                {isCheckingBudget ? "Verifying with MoF..." : `Confirm & Deduct Funds`}
                             </Button>
                         </div>
                     )}
-
-                    {budgetStatus === "rejected" && selectedMinistry && (
-                        <div className="py-6 text-center space-y-4">
-                             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                                <Lock className="w-8 h-8 text-red-600" />
-                             </div>
-                             <div>
-                                <h3 className="text-xl font-bold text-red-700">Budget Exceeded</h3>
-                                <p className="text-sm text-gray-500 max-w-xs mx-auto mt-2">
-                                    This order of <strong>${totalCost}</strong> exceeds the remaining balance of <strong>${selectedMinistry.budget.q1_remaining}</strong>.
-                                </p>
-                             </div>
-                             <Button variant="outline" onClick={resetFlow} className="w-full">Modify Order</Button>
-                        </div>
-                    )}
-
-                    {budgetStatus === "approved" && selectedMinistry && (
-                        <div className="py-6 text-center space-y-4">
-                             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                                <Check className="w-8 h-8 text-green-600" />
-                             </div>
-                             <div>
-                                <h3 className="text-xl font-bold text-green-700">Funds Secured</h3>
-                                <p className="text-sm text-gray-500 max-w-xs mx-auto mt-2">
-                                    Requisition sent to <strong>{selectedMinistry.authorized_approver}</strong> for final sign-off.
-                                </p>
-                             </div>
-                             <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => {toast.success("Order Placed!"); setIsOpen(false);}}>
-                                Return to Dashboard
-                             </Button>
-                        </div>
-                    )}
-
                 </DialogContent>
             </Dialog>
         </div>
         
         <p className="text-xs text-center text-muted-foreground mt-4">
-            *Final price may vary based on specific design requirements and tax.
+            *Restricted items (Passports, Stamps) are only visible to authorized Tier A agencies.
         </p>
 
       </CardContent>

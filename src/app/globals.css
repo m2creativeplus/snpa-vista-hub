@@ -7,48 +7,43 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* SNPA Brand Colors - Based on logo */
-  --color-snpa-primary: #8B2332;
-  --color-snpa-secondary: #1B5E20;
+  /* SNPA Brand Colors - Official Government Standard */
+  --color-snpa-primary: #1B5E20; /* Primary Green */
+  --color-snpa-secondary: #CFA93F; /* Gold */
   --color-snpa-gold: #CFA93F;
   --color-snpa-cream: #F5F5DC;
+  --color-snpa-black: #1A1A1A;
 
   /* Semantic Colors */
-  --color-background: #0a0a0a;
-  --color-foreground: #fafafa;
-  --color-card: #171717;
-  --color-card-foreground: #fafafa;
-  --color-popover: #171717;
-  --color-popover-foreground: #fafafa;
-  --color-primary: #8B2332;
-  --color-primary-foreground: #fafafa;
-  --color-secondary: #262626;
-  --color-secondary-foreground: #fafafa;
-  --color-muted: #262626;
-  --color-muted-foreground: #a1a1aa;
-  --color-accent: #1B5E20;
-  --color-accent-foreground: #fafafa;
-  --color-destructive: #dc2626;
-  --color-destructive-foreground: #fafafa;
-  --color-border: #27272a;
-  --color-input: #27272a;
-  --color-ring: #8B2332;
+  --color-background: #ffffff;
+  --color-foreground: #1A1A1A;
+  --color-card: #ffffff;
+  --color-card-foreground: #1A1A1A;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1A1A1A;
+  --color-primary: #1B5E20;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f3f4f6;
+  --color-secondary-foreground: #111827;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+  --color-accent: #f3f4f6;
+  --color-accent-foreground: #111827;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e5e7eb;
+  --color-input: #e5e7eb;
+  --color-ring: #1B5E20;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-display: 'Poppins', system-ui, sans-serif;
+  --font-sans: 'Poppins', system-ui, sans-serif;
+  --font-display: 'Montserrat', system-ui, sans-serif;
 
-  /* Ink Colors for Tracker */
+  /* Ink Colors */
   --color-ink-cyan: #00BCD4;
   --color-ink-magenta: #E91E63;
   --color-ink-yellow: #FFC107;
   --color-ink-black: #212121;
-
-  /* Status Colors */
-  --color-status-pass: #22c55e;
-  --color-status-fail: #ef4444;
-  --color-status-pending: #f59e0b;
-  --color-status-in-progress: #3b82f6;
 }
 
 @layer base {
