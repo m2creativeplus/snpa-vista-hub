@@ -25,6 +25,8 @@ const navigation = [
   { name: "Procurement", href: "/dashboard/shop", icon: Briefcase },
   { name: "Production", href: "/dashboard/production", icon: Printer },
   { name: "Inventory", href: "/dashboard/inventory", icon: Package },
+  { type: "divider", label: "System Admin" },
+  { name: "Content Ops", href: "/dashboard/cms", icon: Settings },
 ];
 
 export function Sidebar() {

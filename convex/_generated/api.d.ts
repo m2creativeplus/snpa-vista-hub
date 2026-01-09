@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as bulk from "../bulk.js";
 import type * as clients from "../clients.js";
+import type * as cms from "../cms.js";
 import type * as inventory from "../inventory.js";
 import type * as isbn from "../isbn.js";
 import type * as ministries from "../ministries.js";
@@ -24,7 +26,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  bulk: typeof bulk;
   clients: typeof clients;
+  cms: typeof cms;
   inventory: typeof inventory;
   isbn: typeof isbn;
   ministries: typeof ministries;

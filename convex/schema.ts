@@ -191,4 +191,13 @@ export default defineSchema({
     details: v.string(),
     timestamp: v.number(),
   }),
+
+  // CMS Content (Key-Value Store for Dynamic Site Content)
+  cmsContent: defineTable({
+    section: v.string(), // "hero", "about", "announcement"
+    key: v.string(),     // "title", "subtitle", "banner_url"
+    value: v.string(),   // The actual text or image URL
+    type: v.union(v.literal("text"), v.literal("image"), v.literal("json")),
+    lastUpdatedBy: v.optional(v.id("users")),
+  }).index("by_section", ["section"]),
 });
