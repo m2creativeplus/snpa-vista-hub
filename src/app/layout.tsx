@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import { ConvexClientProvider } from "@/components/providers/convex-provider";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Toaster } from "@/components/ui/sonner";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "SNPA Print Intelligence | Somaliland National Printing Agency",
-  description: "Wakaaladda Madbacadda Qaranka - Official Print Services for the Republic of Somaliland. Quality printing, packaging, and publishing services.",
-  keywords: ["SNPA", "Somaliland", "Printing", "Government Printing", "Wakaaladda Madbacadda"],
-  authors: [{ name: "SNPA" }],
-  openGraph: {
-    title: "SNPA Print Intelligence",
-    description: "Official Print Services for the Republic of Somaliland",
-    type: "website",
-  },
+  title: "SNPA Print Intelligence | Official Government Supply",
+  description: "Secure printing procurement for the Government of Somaliland.",
 };
 
 export default function RootLayout({
@@ -20,11 +19,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="antialiased">
-        <ConvexClientProvider>
+    <html lang="en">
+      <body className={`${inter.variable} ${outfit.variable} font-sans bg-slate-50 text-slate-900 antialiased flex flex-col min-h-screen`}>
+        <Header />
+        <div className="flex-1">
           {children}
-        </ConvexClientProvider>
+        </div>
+        <Footer />
+        <Toaster />
       </body>
     </html>
   );

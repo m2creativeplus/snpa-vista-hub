@@ -172,4 +172,60 @@ export default defineSchema({
     timestamp: v.number(),
   }).index("by_entity", ["entityType", "entityId"])
     .index("by_timestamp", ["timestamp"]),
+
+  // ISBN Portal - Pre-registrations and Full Registrations
+  isbnRegistrations: defineTable({
+    bookTitle: v.string(),
+    authorName: v.string(),
+    email: v.string(),
+    phone: v.optional(v.string()),
+    language: v.union(v.literal("Somali"), v.literal("English"), v.literal("Arabic"), v.literal("Other")),
+    genre: v.optional(v.string()),
+    expectedPublishDate: v.optional(v.string()),
+    status: v.union(
+      v.literal("pre_registered"),
+      v.literal("pending_payment"),
+      v.literal("paid"),
+      v.literal("isbn_assigned"),
+      v.literal("published")
+    ),
+    isbn: v.optional(v.string()), // Assigned after payment
+    preRegistrationCode: v.string(), // Temporary code
+    paymentMethod: v.optional(v.union(v.literal("zaad"), v.literal("edahab"), v.literal("bank"), v.literal("cash"))),
+    paymentReference: v.optional(v.string()),
+    amountPaid: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_email", ["email"])
+    .index("by_status", ["status"])
+    .index("by_isbn", ["isbn"])
+    .index("by_preRegistrationCode", ["preRegistrationCode"]),
+
+  // ISBN Search Analytics - Track what users search for
+  isbnSearches: defineTable({
+    query: v.string(),
+    resultType: v.union(v.literal("available"), v.literal("taken"), v.literal("error")),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    convertedToRegistration: v.boolean(),
+    timestamp: v.number(),
+  }).index("by_query", ["query"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // ISBN Catalog - Published books with assigned ISBNs
+  isbnCatalog: defineTable({
+    isbn: v.string(),
+    registrationId: v.id("isbnRegistrations"),
+    title: v.string(),
+    author: v.string(),
+    publisher: v.string(),
+    language: v.string(),
+    pages: v.optional(v.number()),
+    bindingType: v.optional(v.string()),
+    publicationDate: v.string(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_isbn", ["isbn"])
+    .index("by_author", ["author"])
+    .index("by_title", ["title"]),
 });

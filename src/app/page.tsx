@@ -1,292 +1,171 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { 
-  Printer, 
-  Package, 
+  Briefcase, 
+  MapPin, 
+  Phone, 
+  Search, 
   ShoppingCart, 
-  Star, 
-  Truck, 
-  Shield,
-  ArrowRight,
-  Phone,
-  Mail,
-  MapPin
+  User, 
+  Menu,
+  ChevronRight,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
-// Product categories based on UPrinting structure
-const categories = [
-  { name: "Business Cards", slug: "business-cards", icon: "💼", count: 17 },
-  { name: "Brochures & Flyers", slug: "brochures-flyers", icon: "📄", count: 12 },
-  { name: "Posters & Banners", slug: "posters-banners", icon: "🖼️", count: 15 },
-  { name: "Labels & Stickers", slug: "labels-stickers", icon: "🏷️", count: 8 },
-  { name: "Packaging", slug: "packaging", icon: "📦", count: 10 },
-  { name: "Books & Catalogs", slug: "books-catalogs", icon: "📚", count: 6 },
-  { name: "Forms & Documents", slug: "forms-documents", icon: "📋", count: 9 },
-  { name: "Promotional Items", slug: "promotional", icon: "🎁", count: 14 },
-];
-
-const featuredProducts = [
-  { name: "Exercise Books", description: "School notebooks, all sizes", price: "From $0.50/unit", popular: true },
-  { name: "Government Forms", description: "Official document printing", price: "Custom Quote", popular: true },
-  { name: "ID Cards", description: "Secure laminated cards", price: "From $2.00/unit", popular: false },
-  { name: "Certificates", description: "Premium certificate printing", price: "From $1.50/unit", popular: false },
-  { name: "Calendars 2026", description: "Wall & desk calendars", price: "From $3.00/unit", popular: true },
-  { name: "Annual Reports", description: "Professional binding", price: "Custom Quote", popular: false },
-];
-
-const benefits = [
-  { icon: Shield, title: "ISO Certified Quality", desc: "ISO 9001, 12647, 14001 compliant" },
-  { icon: Truck, title: "Nationwide Delivery", desc: "Free delivery across Somaliland" },
-  { icon: Star, title: "40+ Years Experience", desc: "Serving since 1984" },
-  { icon: Printer, title: "State-of-Art Equipment", desc: "Modern offset & digital printing" },
-];
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { products } from "@/data/products";
 
 export default function HomePage() {
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-snpa flex items-center justify-center">
-                <span className="text-white font-bold text-lg">W</span>
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-lg leading-tight">SNPA</h1>
-                <p className="text-xs text-muted-foreground">Wakaaladda Madbacadda</p>
-              </div>
-            </Link>
-            
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="/products" className="text-sm hover:text-primary transition-colors">Products</Link>
-              <Link href="/services" className="text-sm hover:text-primary transition-colors">Services</Link>
-              <Link href="/about" className="text-sm hover:text-primary transition-colors">About</Link>
-              <Link href="/contact" className="text-sm hover:text-primary transition-colors">Contact</Link>
-            </nav>
-            
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <Link href="/quote">
-                <Button variant="outline" size="sm">Get Quote</Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button size="sm" className="bg-gradient-snpa hover:opacity-90">
-                  Operations Portal
-                </Button>
-              </Link>
+    <div className="flex flex-col">
+      {/* Search (Mobile Only, if needed, or already in global) - Global handles mobile search. */}
+      
+      <div className="flex flex-1 container mx-auto px-4 py-6 gap-8">
+        
+        {/* Left Sidebar (Catalog) */}
+        <aside className="hidden lg:block w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden sticky top-24">
+            <div className="p-4 bg-gray-50 border-b border-gray-200 font-bold text-gray-700 flex items-center gap-2">
+              <Menu className="w-4 h-4" />
+              Product Catalog
             </div>
+            <ScrollArea className="h-[calc(100vh-250px)]">
+              <Accordion type="single" collapsible className="w-full">
+                {products.map((category) => (
+                  <AccordionItem key={category.id} value={category.id} className="border-b-0">
+                    <AccordionTrigger className="px-4 py-3 hover:bg-gray-50 text-sm font-medium text-gray-700 hover:no-underline [&[data-state=open]]:bg-green-50 [&[data-state=open]]:text-snpa-primary">
+                      {category.name}
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-0 pb-0">
+                      <div className="bg-gray-50 border-t border-gray-100">
+                        {category.subcategories.map((sub) => (
+                          <Link 
+                            key={sub.id} 
+                            href={`/product/${sub.id}`}
+                            className="block px-8 py-2 text-sm text-gray-600 hover:text-snpa-primary hover:bg-green-50 border-l-2 border-transparent hover:border-snpa-primary transition-colors"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </ScrollArea>
           </div>
-        </div>
-      </header>
+        </aside>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 lg:py-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-snpa-primary/20 via-transparent to-snpa-gold/10" />
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-snpa-primary/20 text-snpa-primary mb-6">
-              <Shield className="w-4 h-4" />
-              <span className="text-sm font-medium">Official Government Printer</span>
-            </div>
-            <h1 className="font-display text-4xl lg:text-6xl font-bold mb-6 leading-tight">
-              Quality Printing for
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-snpa-primary to-snpa-gold"> Somaliland</span>
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl">
-              Wakaaladda Madbacadda Qaranka - Your trusted partner for professional printing, 
-              packaging, and publishing services since 1984.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link href="/products">
-                <Button size="lg" className="bg-gradient-snpa hover:opacity-90">
-                  Browse Products
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-              <Link href="/quote">
-                <Button size="lg" variant="outline">
-                  Request Quote
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Grid */}
-      <section className="py-16 bg-card/50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl font-bold mb-4">Browse by Category</h2>
-            <p className="text-muted-foreground">Find exactly what you need for your printing project</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((cat) => (
-              <Link key={cat.slug} href={`/products/${cat.slug}`}>
-                <Card className="hover:border-snpa-primary/50 transition-all hover:shadow-lg hover:shadow-snpa-primary/10 cursor-pointer group">
-                  <CardContent className="p-6 text-center">
-                    <div className="text-4xl mb-3">{cat.icon}</div>
-                    <h3 className="font-semibold mb-1 group-hover:text-snpa-primary transition-colors">{cat.name}</h3>
-                    <p className="text-sm text-muted-foreground">{cat.count} products</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
-            <div>
-              <h2 className="font-display text-3xl font-bold mb-2">Featured Products</h2>
-              <p className="text-muted-foreground">Our most popular printing services</p>
-            </div>
-            <Link href="/products">
-              <Button variant="ghost">
-                View All <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProducts.map((product, i) => (
-              <Card key={i} className="group hover:border-snpa-primary/50 transition-all">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-snpa-primary/20 to-snpa-gold/20 flex items-center justify-center">
-                      <Printer className="w-8 h-8 text-snpa-primary" />
-                    </div>
-                    {product.popular && (
-                      <span className="px-2 py-1 text-xs font-medium bg-snpa-gold/20 text-snpa-gold rounded-full">
-                        Popular
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2 group-hover:text-snpa-primary transition-colors">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-snpa-gold">{product.price}</span>
-                    <Button size="sm" variant="ghost" className="group-hover:bg-snpa-primary/10">
-                      Order Now <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section className="py-16 bg-gradient-to-br from-snpa-primary/10 via-background to-snpa-gold/5">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, i) => (
-              <div key={i} className="text-center p-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-snpa-primary/20 flex items-center justify-center">
-                  <benefit.icon className="w-8 h-8 text-snpa-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="bg-gradient-snpa rounded-2xl p-8 lg:p-12 text-center">
-            <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-4">
-              Ready to Start Your Project?
-            </h2>
-            <p className="text-white/80 mb-8 max-w-xl mx-auto">
-              Get a custom quote for your printing needs. Our team is ready to help bring your vision to life.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/quote">
-                <Button size="lg" className="bg-white text-snpa-primary hover:bg-white/90">
-                  Get Free Quote
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                  Contact Us
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-snpa flex items-center justify-center">
-                  <span className="text-white font-bold">W</span>
-                </div>
-                <div>
-                  <h3 className="font-display font-bold">SNPA</h3>
-                  <p className="text-xs text-muted-foreground">Est. 1984</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Somaliland National Printing Agency - Official government printer serving the nation.
+        {/* Main Content Area */}
+        <main className="flex-1">
+          
+          {/* Promo Banner */}
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-8 mb-8 text-white relative overflow-hidden shadow-lg">
+            <div className="relative z-10 max-w-lg">
+              <span className="inline-block px-3 py-1 bg-snpa-gold text-black text-xs font-bold rounded mb-4 uppercase tracking-wider">
+                FY 2025 Allocation Active
+              </span>
+              <h2 className="text-3xl font-bold mb-4">Official Government Stationery Supply</h2>
+              <p className="text-gray-300 mb-6">
+                Secure printing services for Ministries, Agencies, and Departments. 
+                Approved by the Auditor General.
               </p>
+              <div className="flex gap-3">
+                <Button className="bg-snpa-primary hover:bg-green-700 text-white font-bold border-0">
+                  Start New Requisition
+                </Button>
+                <Button variant="outline" className="bg-transparent text-white border-white hover:bg-white/10">
+                  Check Budget Status
+                </Button>
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">Products</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/products/business-cards" className="hover:text-foreground">Business Cards</Link></li>
-                <li><Link href="/products/brochures-flyers" className="hover:text-foreground">Brochures & Flyers</Link></li>
-                <li><Link href="/products/packaging" className="hover:text-foreground">Packaging</Link></li>
-                <li><Link href="/products/books-catalogs" className="hover:text-foreground">Books & Catalogs</Link></li>
-              </ul>
+            {/* Abstract Pattern */}
+            <div className="absolute right-0 top-0 h-full w-1/2 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+            <div className="absolute -right-10 -bottom-20 w-64 h-64 bg-snpa-primary rounded-full blur-3xl opacity-50" />
+          </div>
+
+          {/* Product Grid (Popular) */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Frequently Ordered</h2>
+              <Link href="/products" className="text-sm font-medium text-snpa-primary hover:underline flex items-center">
+                View All <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/about" className="hover:text-foreground">About Us</Link></li>
-                <li><Link href="/services" className="hover:text-foreground">Services</Link></li>
-                <li><Link href="/quality" className="hover:text-foreground">Quality Standards</Link></li>
-                <li><Link href="/careers" className="hover:text-foreground">Careers</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Hargeisa, Somaliland
-                </li>
-                <li className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  +252-2-123456
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  info@snpa.gov.sl
-                </li>
-              </ul>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Product Card 1 */}
+              <div className="group bg-white rounded-lg border border-gray-200 hover:border-snpa-primary transition-all hover:shadow-md cursor-pointer">
+                <div className="h-40 bg-gray-100 rounded-t-lg relative overflow-hidden flex items-center justify-center text-gray-300">
+                    <FileText className="w-12 h-12" />
+                    <span className="absolute top-2 right-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">In Stock</span>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-900 mb-1 group-hover:text-snpa-primary">Standard Business Cards</h3>
+                  <p className="text-xs text-gray-500 mb-4">from $0.02 / unit</p>
+                  <Button size="sm" className="w-full bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:text-snpa-primary">
+                    Configure & Order
+                  </Button>
+                </div>
+              </div>
+
+               {/* Product Card 2 */}
+              <div className="group bg-white rounded-lg border border-gray-200 hover:border-snpa-primary transition-all hover:shadow-md cursor-pointer">
+                <div className="h-40 bg-gray-100 rounded-t-lg relative overflow-hidden flex items-center justify-center text-gray-300">
+                    <FileText className="w-12 h-12" />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-900 mb-1 group-hover:text-snpa-primary">Official Letterheads (A4)</h3>
+                  <p className="text-xs text-gray-500 mb-4">from $0.15 / unit</p>
+                  <Button size="sm" className="w-full bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:text-snpa-primary">
+                    Configure & Order
+                  </Button>
+                </div>
+              </div>
+
+               {/* Product Card 3 */}
+              <div className="group bg-white rounded-lg border border-gray-200 hover:border-snpa-primary transition-all hover:shadow-md cursor-pointer">
+                <div className="h-40 bg-gray-100 rounded-t-lg relative overflow-hidden flex items-center justify-center text-gray-300">
+                    <FileText className="w-12 h-12" />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-900 mb-1 group-hover:text-snpa-primary">Security ID Badges</h3>
+                  <p className="text-xs text-gray-500 mb-4">from $2.50 / unit</p>
+                  <Button size="sm" className="w-full bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:text-snpa-primary">
+                    Configure & Order
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2026 Somaliland National Printing Agency. All rights reserved.</p>
+
+          {/* Quick Stats / Dashboard Link */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-200 pt-8 mt-8">
+            <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-xs text-blue-600 font-bold uppercase mb-1">Your Budget</p>
+                <div className="text-2xl font-bold text-blue-900">$11,227.00</div>
+                <p className="text-xs text-blue-400 mt-1">FY 2025 Remaining</p>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg">
+                <p className="text-xs text-yellow-700 font-bold uppercase mb-1">Pending Approval</p>
+                <div className="text-2xl font-bold text-yellow-900">3 Orders</div>
+                <p className="text-xs text-yellow-600 mt-1">Awaiting DG Sign-off</p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-xs text-green-700 font-bold uppercase mb-1">Delivered (Q1)</p>
+                <div className="text-2xl font-bold text-green-900">12 Items</div>
+                <p className="text-xs text-green-600 mt-1">View Delivery Reports</p>
+            </div>
           </div>
-        </div>
-      </footer>
+
+        </main>
+      </div>
     </div>
   );
 }
