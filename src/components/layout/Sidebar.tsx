@@ -10,7 +10,8 @@ import {
   Settings, 
   Printer, 
   BarChart3, 
-  Package 
+  Package,
+  LineChart 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -66,8 +67,8 @@ export function Sidebar() {
               href={item.href!}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-white text-[#1B5E20]" 
+                isActive
+                  ? "bg-white text-[#1B5E20]"
                   : "text-white/80 hover:bg-white/10 hover:text-white"
               )}
             >
